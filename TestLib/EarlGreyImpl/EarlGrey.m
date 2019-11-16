@@ -122,12 +122,16 @@ static BOOL ExecuteSyncBlockInBackgroundQueue(BOOL (^block)(void)) {
   if (!success) {
     NSString *errorDescription;
     if (syncErrorBeforeRotation) {
-      NSString *errorReason = @"Application did not idle before rotating.\n%@";
-      errorDescription = [NSString stringWithFormat:errorReason, syncErrorBeforeRotation];
+      NSString *errorReason = @"Application did not idle before rotating.\n%@\n%@";
+      errorDescription =
+          [NSString stringWithFormat:errorReason, syncErrorBeforeRotation.localizedDescription,
+                                     syncErrorBeforeRotation.descriptionGlossary];
     } else if (syncErrorAfterRotation) {
       NSString *errorReason =
-          @"Application did not idle after rotating and before verifying the rotation.\n%@";
-      errorDescription = [NSString stringWithFormat:errorReason, syncErrorBeforeRotation];
+          @"Application did not idle after rotating and before verifying the rotation.\n%@@\n%@";
+      errorDescription =
+          [NSString stringWithFormat:errorReason, syncErrorBeforeRotation.localizedDescription,
+                                     syncErrorBeforeRotation.descriptionGlossary];
     } else if (!syncErrorBeforeRotation && !syncErrorAfterRotation) {
       NSString *errorReason = @"Could not rotate application to orientation: %tu. XCUIDevice "
                               @"Orientation: %tu UIDevice Orientation: %tu. UIDevice is the "
@@ -155,7 +159,7 @@ static BOOL ExecuteSyncBlockInBackgroundQueue(BOOL (^block)(void)) {
     NSString *errorDescription =
         [NSString stringWithFormat:@"Failed to dismiss keyboard since it was not showing. "
                                    @"Internal Error: %@",
-                                   dismissalError.description];
+                                   dismissalError.localizedDescription];
     dismissalError = GREYErrorMake(kGREYKeyboardDismissalErrorDomain,
                                    GREYKeyboardDismissalFailedErrorCode, errorDescription);
     if (error) {

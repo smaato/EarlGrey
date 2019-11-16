@@ -25,6 +25,22 @@
 
 @implementation ErrorHandlingTest
 
+- (void)testDescriptionForSearchAction {
+  [self openTestViewNamed:@"Scroll Views"];
+  id<GREYMatcher> matcher = grey_allOf(grey_accessibilityLabel(@"Label 2"), grey_interactable(),
+                                       grey_sufficientlyVisible(), nil);
+  NSError *error;
+  [[[EarlGrey selectElementWithMatcher:matcher]
+         usingSearchAction:grey_scrollInDirection(kGREYDirectionDown, 50)
+      onElementWithMatcher:grey_accessibilityLabel(@"Invalid Scroll View")]
+      assertWithMatcher:grey_sufficientlyVisible()
+                  error:&error];
+  NSString *searchActionDescription = @"Search action failed: Interaction cannot continue";
+  NSString *elementMatcherDescription = @"Element Matcher: ((respondsToSelector";
+  XCTAssertTrue([error.description containsString:searchActionDescription]);
+  XCTAssertTrue([error.description containsString:elementMatcherDescription]);
+}
+
 - (void)testRotationDescriptionGlossary {
   [EarlGrey rotateDeviceToOrientation:UIDeviceOrientationLandscapeLeft error:nil];
   [[EarlGrey selectElementWithMatcher:grey_text(@"Basic Views")] performAction:grey_tap()];
@@ -33,7 +49,16 @@
   [[GREYHostApplicationDistantObject sharedInstance] induceNonTactileActionTimeoutInTheApp];
   NSError *error;
   [EarlGrey rotateDeviceToOrientation:UIDeviceOrientationPortrait error:&error];
-  XCTAssertTrue([error.description containsString:@"\"Description Glossary\" :"]);
+  NSString *idlingResourceString = @"Failed to execute block because idling resources are busy";
+  XCTAssertTrue([error.description containsString:idlingResourceString]);
+}
+
+- (void)testKeyboardDismissalError {
+  NSError *error;
+  [EarlGrey dismissKeyboardWithError:&error];
+  NSString *keyboardErrorString = @"Failed to dismiss keyboard since it was not showing. Internal "
+                                  @"Error: Failed to dismiss keyboard since it was not showing.";
+  XCTAssertTrue([error.description containsString:keyboardErrorString]);
 }
 
 - (void)testActionErrorContainsHierarchyForFailures {
@@ -64,11 +89,11 @@
 
 - (void)testIdlingResourceContainsOnlyOneHierarchyInstance {
   [self openTestViewNamed:@"Animations"];
+  [[EarlGrey selectElementWithMatcher:grey_accessibilityLabel(@"AnimationControl")]
+      performAction:grey_tap()];
   double originalTimeout = GREY_CONFIG_DOUBLE(kGREYConfigKeyInteractionTimeoutDuration);
   [[GREYConfiguration sharedConfiguration] setValue:@(1)
                                        forConfigKey:kGREYConfigKeyInteractionTimeoutDuration];
-  [[EarlGrey selectElementWithMatcher:grey_accessibilityLabel(@"AnimationControl")]
-      performAction:grey_tap()];
   NSError *error;
   [[EarlGrey selectElementWithMatcher:grey_accessibilityLabel(@"AnimationStatus")]
       assertWithMatcher:grey_text(@"Paused")

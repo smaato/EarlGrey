@@ -17,6 +17,7 @@
 #import "GREYElementInteractionErrorHandler.h"
 
 #import "GREYAssertionDefinesPrivate.h"
+#import "GREYError+Private.h"
 #import "GREYErrorConstants.h"
 #import "GREYFailureHandler.h"
 #import "GREYFrameworkException.h"
@@ -37,22 +38,31 @@
     if (errorOrNil) {
       *errorOrNil = interactionError;
     } else {
-      NSMutableString *reason = [[interactionError localizedDescription] mutableCopy];
-      NSString *descriptionGlossary = [[interactionError descriptionGlossary] description];
-      if (descriptionGlossary) {
-        [reason appendFormat:@"\nDescription Glossary: \n%@", descriptionGlossary];
+      NSString *reason;
+      NSString *matcherDetails;
+      NSString *localizedFailureReason =
+          interactionError.userInfo[NSLocalizedFailureReasonErrorKey];
+      if (localizedFailureReason) {
+        reason = localizedFailureReason;
+      } else {
+        NSMutableString *mutableReason = [interactionError.localizedDescription mutableCopy];
+        NSString *mismatchInfo = interactionError.errorInfo[@"Mismatch"];
+        if (mismatchInfo) {
+          [mutableReason appendFormat:@"\nMismatch: %@", mismatchInfo];
+        }
+        reason = [mutableReason copy];
+        matcherDetails = interactionError.userInfo[kErrorDetailElementMatcherKey];
       }
 
       GREYFrameworkException *exception =
-          [GREYFrameworkException exceptionWithName:[interactionError domain]
+          [GREYFrameworkException exceptionWithName:interactionError.domain
                                              reason:reason
-                                           userInfo:[interactionError userInfo]];
+                                           userInfo:interactionError.userInfo];
 
       id<GREYFailureHandler> failureHandler =
           [NSThread mainThread].threadDictionary[GREYFailureHandlerKey];
 
-      NSString *errorDetails = [[exception userInfo] valueForKey:kErrorDetailElementMatcherKey];
-      [failureHandler handleException:exception details:errorDetails];
+      [failureHandler handleException:exception details:matcherDetails];
     }
     return NO;
   } else {

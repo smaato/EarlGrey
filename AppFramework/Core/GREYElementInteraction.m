@@ -156,9 +156,10 @@
       if (elementsFound || !syncSuccess) {
         break;
       } else if (!_searchAction) {
-        NSString *desc = @"Interaction cannot continue because the desired element was not found.";
+        NSString *description =
+            @"Interaction cannot continue because the desired element was not found.";
         error = GREYErrorMakeWithHierarchy(kGREYInteractionErrorDomain,
-                                           kGREYInteractionElementNotFoundErrorCode, desc);
+                                           kGREYInteractionElementNotFoundErrorCode, description);
         break;
       } else if (searchActionError) {
         break;
@@ -183,26 +184,28 @@
   } else if (executorError && numSearchIterations <= 0) {
     // Errors during the synchronization before the match happens.
     // TODO: Add test coverage for this error. // NOLINT
-    NSString *actionTimeoutDesc =
+    NSString *actionTimeoutDescription =
         [NSString stringWithFormat:@"App not idle within %g seconds.", timeout];
     I_GREYPopulateNestedError(&error, kGREYInteractionErrorDomain, kGREYInteractionTimeoutErrorCode,
-                              actionTimeoutDesc, executorError);
+                              actionTimeoutDescription, executorError);
   } else if (searchActionError) {
-    NSString *desc = [NSString stringWithFormat:@"Search action failed: %@Underlying error: %@",
-                                                searchActionError.localizedFailureReason,
-                                                searchActionError.underlyingErrorDescription];
+    NSString *description =
+        [NSString stringWithFormat:@"Search action failed: %@\nElement Matcher: %@\n",
+                                   searchActionError.localizedDescription,
+                                   searchActionError.userInfo[kErrorDetailElementMatcherKey]];
     I_GREYPopulateError(&error, kGREYInteractionErrorDomain,
-                        kGREYInteractionElementNotFoundErrorCode, desc);
+                        kGREYInteractionElementNotFoundErrorCode, description);
   } else if (executorError || isSearchTimedOut) {
     CFTimeInterval interactionTimeout =
         GREY_CONFIG_DOUBLE(kGREYConfigKeyInteractionTimeoutDuration);
-    NSString *desc = [NSString stringWithFormat:@"Interaction timed out after %g seconds while "
-                                                @"searching for element.",
-                                                interactionTimeout];
-    GREYError *timeoutError = GREYErrorMakeWithHierarchy(kGREYInteractionErrorDomain,
-                                                         kGREYInteractionTimeoutErrorCode, desc);
-    I_GREYPopulateNestedError(&error, kGREYInteractionErrorDomain,
-                              kGREYInteractionElementNotFoundErrorCode, @"", timeoutError);
+    NSString *description =
+        [NSString stringWithFormat:@"Interaction timed out after %g seconds while "
+                                   @"searching for element.",
+                                   interactionTimeout];
+    GREYError *timeoutError = GREYErrorMakeWithHierarchy(
+        kGREYInteractionErrorDomain, kGREYInteractionTimeoutErrorCode, description);
+    I_GREYPopulateError(&error, kGREYInteractionErrorDomain,
+                        kGREYInteractionElementNotFoundErrorCode, timeoutError);
   }
 
   GREYFatalAssertWithMessage(error != nil, @"Elements found but with an error: %@", error);
@@ -793,24 +796,28 @@
                                         withReason:(NSString *)reason {
   // Obtain the hierarchy before framing the error since this can modify the error as well.
   NSString *hierarchy = [self grey_unifyAndExtractHierarchyFromError:interactionError];
-  NSDictionary *userInfo = @{
-    NSLocalizedDescriptionKey : interactionError.description,
-    NSLocalizedFailureReasonErrorKey : reason,
-    kErrorDetailElementMatcherKey : _elementMatcher.description,
-  };
-  NSMutableDictionary *mutableUserInfo = [[NSMutableDictionary alloc] initWithDictionary:userInfo];
-  if (hierarchy) {
-    [mutableUserInfo setObject:hierarchy forKey:kErrorDetailAppUIHierarchyKey];
+
+  // Add information such as element matcher and any nested error info.
+  NSMutableDictionary<NSString *, id> *userInfo = [[NSMutableDictionary alloc] init];
+  [userInfo setValue:interactionError.localizedDescription forKey:NSLocalizedDescriptionKey];
+  [userInfo setValue:reason forKey:NSLocalizedFailureReasonErrorKey];
+  // Nested errors contain extra information such as stack traces, error codes that aren't useful.
+  // We only need the description glossary for printing in the error.
+  if ([interactionError respondsToSelector:@selector(nestedError)] &&
+      interactionError.nestedError) {
+    [userInfo setValue:interactionError.nestedError.descriptionGlossary
+                forKey:NSUnderlyingErrorKey];
   }
-  NSDictionary *appScreenshots = [self grey_appScreenshotsFromError:interactionError];
-  if (appScreenshots) {
-    [mutableUserInfo setObject:appScreenshots forKey:kErrorDetailAppScreenshotsKey];
-  }
-  userInfo = [mutableUserInfo copy];
-  GREYError *wrappedError = [GREYError errorWithDomain:interactionError.domain
-                                                  code:interactionError.code
-                                              userInfo:userInfo];
-  wrappedError.underlyingErrorDescription = interactionError.localizedDescription;
+  [userInfo setValue:_elementMatcher.description forKey:kErrorDetailElementMatcherKey];
+
+  NSDictionary<NSString *, UIImage *> *appScreenshots =
+      [self grey_appScreenshotsFromError:interactionError];
+
+  // Create a new error from the compiled information.
+  GREYError *wrappedError = I_GREYErrorMake(
+      interactionError.domain, interactionError.code, userInfo, interactionError.filePath,
+      interactionError.line, interactionError.functionName, interactionError.descriptionGlossary,
+      interactionError.stackTrace, hierarchy, appScreenshots);
   return wrappedError;
 }
 
@@ -913,8 +920,8 @@
  *  @return An NSDictionary with the extracted app screenshots from the provided @c error.
  *          Can be @c nil if no screenshots were taken on error creation.
  */
-- (NSDictionary *)grey_appScreenshotsFromError:(NSError *)error {
-  NSDictionary *appScreenshots;
+- (NSDictionary<NSString *, UIImage *> *)grey_appScreenshotsFromError:(NSError *)error {
+  NSDictionary<NSString *, UIImage *> *appScreenshots;
   if ([error isKindOfClass:[GREYError class]]) {
     NSError *modifiedError = [(GREYError *)error nestedError] ?: error;
     if ([modifiedError isKindOfClass:[GREYError class]]) {

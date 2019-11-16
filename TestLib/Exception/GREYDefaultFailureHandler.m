@@ -48,25 +48,26 @@
   _currentTestCase = testCase;
 }
 
-- (void)handleException:(GREYFrameworkException *)exception details:(NSString *)details {
+- (void)handleException:(GREYFrameworkException *)exception details:(NSString *)matcherDetails {
   GREYThrowOnNilParameter(exception);
   id currentTestCase = [XCTestCase grey_currentTestCase];
 
-  NSMutableArray *logger = [[NSMutableArray alloc] init];
+  NSMutableString *logMessage = [[NSMutableString alloc] init];
   NSString *reason = exception.reason;
 
   if (reason.length == 0) {
     reason = @"exception.reason was not provided";
   }
 
-  [logger addObject:[NSString stringWithFormat:@"%@: %@", @"Exception Name", exception.name]];
-  [logger addObject:[NSString stringWithFormat:@"%@: %@", @"Exception Reason", reason]];
+  [logMessage
+      appendString:[NSString stringWithFormat:@"%@: %@", @"Exception Name", exception.name]];
+  [logMessage appendString:[NSString stringWithFormat:@"\n%@: %@", @"Exception Reason", reason]];
 
-  if (details.length > 0) {
-    [logger addObject:[NSString stringWithFormat:@"%@: %@", @"Exception Details", details]];
+  if (matcherDetails.length > 0) {
+    [logMessage
+        appendString:[NSString stringWithFormat:@"\n%@: %@", @"Element Matcher", matcherDetails]];
   }
 
-  NSString *logMessage = [logger componentsJoinedByString:@"\n"];
   NSDictionary *appScreenshots = [exception.userInfo valueForKey:kErrorDetailAppScreenshotsKey];
   // Re-obtain the screenshots when a user might be using GREYAsserts. Since this is from the test
   // process, the delay here would be minimal.
@@ -99,7 +100,7 @@
                                                       stackTrace:stackTrace
                                                   appScreenshots:appScreenshots
                                                        hierarchy:appUIHierarchy
-                                                          format:@"%@\n", logMessage];
+                                                          format:@"%@", logMessage];
   [currentTestCase grey_markAsFailedAtLine:_lineNumber inFile:_fileName description:log];
 }
 
