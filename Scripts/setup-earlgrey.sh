@@ -17,7 +17,7 @@
 # Download Fishhook in the EarlGrey directory in the fishhook/ directory.
 obtain_fishhook() {
   # Set the current branch, commit or tag of Fishhook to use.
-  readonly FISHHOOK_VERSION="0.3"
+  readonly FISHHOOK_VERSION="0.4"
   # URL for Fishhook to be downloaded from.
   readonly FISHHOOK_URL="https://github.com/smaato/fishhook/archive/${FISHHOOK_VERSION}.zip"
   echo "Obtaining the fishhook dependency."
