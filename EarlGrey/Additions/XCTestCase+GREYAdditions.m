@@ -149,11 +149,27 @@ NSString *const kGREYXCTestCaseNotificationKey = @"GREYXCTestCaseNotificationKey
                          inFile:(NSString *)file
                     description:(NSString *)description {
   self.continueAfterFailure = NO;
-  [self recordFailureWithDescription:description inFile:file atLine:line expected:NO];
+  [self recordFailureWithDescription:description inFile:file atLine:line];
+    
   // If the test fails outside of the main thread in a nested runloop it will not be interrupted
   // until it's back in the outer most runloop. Raise an exception to interrupt the test immediately
   [[GREYFrameworkException exceptionWithName:kInternalTestInterruptException
                                       reason:@"Immediately halt execution of testcase"] raise];
+}
+
+- (void)recordFailureWithDescription:(NSString *)description inFile:(NSString *)file atLine:(NSUInteger)lineNo {
+    
+    
+    XCTSourceCodeLocation *xctloc = [[XCTSourceCodeLocation alloc] initWithFilePath:file lineNumber:(NSInteger)lineNo] ;
+    XCTSourceCodeContext *xctctx = [[XCTSourceCodeContext alloc] initWithLocation:xctloc] ;
+    XCTIssue *issue = [[XCTIssue alloc] initWithType:XCTIssueTypeAssertionFailure
+                                  compactDescription:[NSString stringWithFormat:@"in line %lu", (unsigned long)lineNo]
+                                 detailedDescription:description
+                                   sourceCodeContext:xctctx
+                                     associatedError:nil
+                                         attachments:[NSArray array]];
+    
+    [self recordIssue:issue];
 }
 
 #pragma mark - Private
@@ -234,8 +250,7 @@ NSString *const kGREYXCTestCaseNotificationKey = @"GREYXCTestCaseNotificationKey
           self.continueAfterFailure = YES;
           [self recordFailureWithDescription:@"Test has finished with unknown status."
                                       inFile:@__FILE__
-                                      atLine:__LINE__
-                                    expected:NO];
+                                      atLine:__LINE__];
           break;
       }
       object_setClass(self.invocation, originalInvocationClass);

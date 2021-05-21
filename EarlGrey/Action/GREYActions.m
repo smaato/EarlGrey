@@ -494,7 +494,7 @@ static Class accessibilityTextFieldElementClass;
                                          error:errorOrNil];
 
   // Reset the keyboard delegate's autocorrection back to the original one.
-  [self grey_setAutocorrectionType:originalAutoCorrectionType
+    [self grey_setAutocorrectionType:originalAutoCorrectionType ? YES : NO
                        forInstance:keyboardInstance
       withOriginalKeyboardDelegate:originalKeyboardDelegate
               withKeyboardToggling:NO];

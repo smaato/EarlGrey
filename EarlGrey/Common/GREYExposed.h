@@ -193,6 +193,11 @@ IOHIDEventRef IOHIDEventCreateDigitizerFingerEvent(CFAllocatorRef allocator,
 - (void)setIsTap:(BOOL)isTap;
 
 /**
+  * Must be set to @c YES for new touches on iOS 14.
+  */
+- (void)_setIsTapToClick:(BOOL)isTap;
+
+/**
  *  Sets location property to @c location. If @c reset is @c NO, the original value of location will
  *  be stored in the UITouch's internal property @c previousLocation. If @c reset is @c YES, @c
  *  location will be stored in @c previousLocation.
