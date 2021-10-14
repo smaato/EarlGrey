@@ -23,12 +23,6 @@
 #import "Common/GREYSwizzler.h"
 #import "Synchronization/GREYAppStateTracker.h"
 
-/**
- *  The class for UICompatibilityInputViewController which isn't tracked here since we've faced
- *  issues with tracking it when it comes to typing on keyboards with accessory views.
- */
-static Class compatibilityVCClass;
-
 @implementation UIViewController (GREYAdditions)
 
 + (void)load {
@@ -67,12 +61,6 @@ static Class compatibilityVCClass;
                     withMethod:swizzledSel];
     NSAssert(swizzleSuccess,
              @"Cannot swizzle UIViewController viewDidMoveToWindow:shouldAppearOrDisappear:");
-  }
-}
-
-+ (void)initialize {
-  if (self == [UIViewController class]) {
-    compatibilityVCClass = NSClassFromString(@"UICompatibilityInputViewController");
   }
 }
 
@@ -120,34 +108,30 @@ static Class compatibilityVCClass;
 }
 
 - (void)greyswizzled_viewWillAppear:(BOOL)animated {
-  // For a UICompatibilityInputViewController, do not track this state due to issues seen with
-  // untracking.
-  if (![self isKindOfClass:compatibilityVCClass]) {
-    BOOL movingToNilWindow = [self grey_isMovingToNilWindow];
-    if (movingToNilWindow) {
-      GREYLogVerbose(@"View is moving to nil window. Skipping viewWillAppear state tracking.");
+  BOOL movingToNilWindow = [self grey_isMovingToNilWindow];
+  if (movingToNilWindow) {
+    GREYLogVerbose(@"View is moving to nil window. Skipping viewWillAppear state tracking.");
+  }
+
+  if (!movingToNilWindow) {
+    // Interactive transitions can cancel and cause imbalance of will and did calls.
+    id<UIViewControllerTransitionCoordinator> coordinator = [self transitionCoordinator];
+    if (coordinator && [coordinator initiallyInteractive]) {
+      [coordinator notifyWhenInteractionEndsUsingBlock:
+          ^(id<UIViewControllerTransitionCoordinatorContext> context) {
+            if ([context isCancelled]) {
+              NSString *elementID =
+                  objc_getAssociatedObject(self, @selector(greyswizzled_viewWillAppear:));
+              UNTRACK_STATE_FOR_ELEMENT_WITH_ID(kGREYPendingViewsToAppear, elementID);
+            }
+          }];
     }
 
-    if (!movingToNilWindow) {
-      // Interactive transitions can cancel and cause imbalance of will and did calls.
-      id<UIViewControllerTransitionCoordinator> coordinator = [self transitionCoordinator];
-      if (coordinator && [coordinator initiallyInteractive]) {
-        [coordinator notifyWhenInteractionEndsUsingBlock:
-         ^(id<UIViewControllerTransitionCoordinatorContext> context) {
-           if ([context isCancelled]) {
-             NSString *elementID =
-             objc_getAssociatedObject(self, @selector(greyswizzled_viewWillAppear:));
-             UNTRACK_STATE_FOR_ELEMENT_WITH_ID(kGREYPendingViewsToAppear, elementID);
-           }
-         }];
-      }
-
-      NSString *elementID = TRACK_STATE_FOR_ELEMENT(kGREYPendingViewsToAppear, self);
-      objc_setAssociatedObject(self,
-                               @selector(greyswizzled_viewWillAppear:),
-                               elementID,
-                               OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    }
+    NSString *elementID = TRACK_STATE_FOR_ELEMENT(kGREYPendingViewsToAppear, self);
+    objc_setAssociatedObject(self,
+                             @selector(greyswizzled_viewWillAppear:),
+                             elementID,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   }
   INVOKE_ORIGINAL_IMP1(void, @selector(greyswizzled_viewWillAppear:), animated);
 }

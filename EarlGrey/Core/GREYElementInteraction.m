@@ -143,7 +143,7 @@
     GREYPopulateNestedErrorOrLog(error,
                                  kGREYInteractionErrorDomain,
                                  kGREYInteractionElementNotFoundErrorCode,
-                                 @"Search action failed",
+                                 @"",
                                  searchActionError);
   } else if (timedOut) {
     CFTimeInterval interactionTimeout =
@@ -516,7 +516,8 @@
 
   // Throw an exception if userProvidedError isn't provided and the action failed.
   if (!userProvidedError) {
-    // First check errors that can happen at the inner most level such as timeouts.
+    // first check errors that can happens at the inner most level
+    // for example: time out, executor error
     NSDictionary * errorDescriptions =
         [[GREYError grey_nestedErrorDictionariesForError:actionError] objectAtIndex:0];
 
@@ -534,7 +535,7 @@
                                kErrorDetailRecoverySuggestionKey ];
 
         NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                indent:kGREYObjectFormatIndent
+                                                                indent:GREYObjectFormatIndent
                                                              hideEmpty:YES
                                                               keyOrder:keyOrder];
         NSString *reason = [NSString stringWithFormat:@"Matching element timed out.\n"
@@ -553,9 +554,10 @@
         errorDetails[kErrorDetailActionNameKey] = action.name;
         errorDetails[kErrorDetailElementMatcherKey] = _elementMatcher.description;
 
-        NSArray *keyOrder = @[ kErrorDetailActionNameKey, kErrorDetailElementMatcherKey ];
+        NSArray *keyOrder = @[ kErrorDetailActionNameKey,
+                               kErrorDetailElementMatcherKey ];
         NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                indent:kGREYObjectFormatIndent
+                                                                indent:GREYObjectFormatIndent
                                                              hideEmpty:YES
                                                               keyOrder:keyOrder];
         NSString *reason =
@@ -573,7 +575,7 @@
       }
     }
 
-    // Second, check for errors with less specific reason (such as interaction error).
+    // second, check for errors with less specific reason (such as interaction error)
     if ([actionError.domain isEqualToString:kGREYInteractionErrorDomain]) {
       NSString *searchAPIInfo = [self grey_searchActionDescription];
 
@@ -590,7 +592,7 @@
                                  kErrorDetailElementMatcherKey,
                                  kErrorDetailRecoverySuggestionKey ];
           NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                  indent:kGREYObjectFormatIndent
+                                                                  indent:GREYObjectFormatIndent
                                                                hideEmpty:YES
                                                                 keyOrder:keyOrder];
           NSString *reason = [NSString stringWithFormat:@"Cannot find UI element.\n"
@@ -606,6 +608,7 @@
                                 searchAPIInfo,
                                 [GREYError grey_nestedDescriptionForError:actionError]);
           return NO;
+
         }
         case kGREYInteractionMultipleElementsMatchedErrorCode: {
           NSMutableDictionary *errorDetails = [[NSMutableDictionary alloc] init];
@@ -619,7 +622,7 @@
                                  kErrorDetailElementMatcherKey,
                                  kErrorDetailRecoverySuggestionKey ];
           NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                  indent:kGREYObjectFormatIndent
+                                                                  indent:GREYObjectFormatIndent
                                                                hideEmpty:YES
                                                                 keyOrder:keyOrder];
           NSString *reason = [NSString stringWithFormat:@"Multiple UI elements matched "
@@ -638,28 +641,18 @@
           return NO;
         }
         case kGREYInteractionConstraintsFailedErrorCode: {
-          NSArray *keyOrder = @[ kErrorDetailActionNameKey,
-                                 kErrorDetailElementDescriptionKey,
-                                 kErrorDetailConstraintRequirementKey,
-                                 kErrorDetailConstraintDetailsKey,
-                                 kErrorDetailRecoverySuggestionKey ];
-          NSDictionary *errorInfo = [(GREYError *)actionError errorInfo];
-          NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorInfo
-                                                                  indent:kGREYObjectFormatIndent
-                                                               hideEmpty:YES
-                                                                keyOrder:keyOrder];
-
           NSString *reason = [NSString stringWithFormat:@"Cannot perform action due to "
-                                                        @"constraint(s) failure.\n"
+                                                        @"a constraint failure\n"
                                                         @"Exception with Action: %@\n",
-                                                        reasonDetail];
+                                                        [(GREYError *)actionError errorInfo]];
           NSString *nestedError = [GREYError grey_nestedDescriptionForError:actionError];
           I_GREYConstraintsFailedWithDetails(reason, nestedError);
           return NO;
         }
       }
     }
-    // Add unique failure messages for failure with unknown reason.
+
+    // Add unique failure messages for failure with unknown reason
     NSMutableDictionary *errorDetails = [[NSMutableDictionary alloc] init];
 
     errorDetails[kErrorDetailActionNameKey] = action.name;
@@ -668,7 +661,7 @@
     NSArray *keyOrder = @[ kErrorDetailActionNameKey,
                            kErrorDetailElementMatcherKey ];
     NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                            indent:kGREYObjectFormatIndent
+                                                            indent:GREYObjectFormatIndent
                                                          hideEmpty:YES
                                                           keyOrder:keyOrder];
     NSString *reason = [NSString stringWithFormat:@"An action failed. "
@@ -707,7 +700,7 @@
     // first check errors that can happens at the inner most level
     // for example: executor error
     NSDictionary * errorDescriptions =
-        [[GREYError grey_nestedErrorDictionariesForError:assertionError] objectAtIndex:0];
+    [[GREYError grey_nestedErrorDictionariesForError:assertionError] objectAtIndex:0];
 
     if (errorDescriptions != nil) {
       NSString *errorDomain = errorDescriptions[kErrorDomainKey];
@@ -722,7 +715,7 @@
         NSArray *keyOrder = @[ kErrorDetailAssertCriteriaKey,
                                kErrorDetailRecoverySuggestionKey ];
         NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                indent:kGREYObjectFormatIndent
+                                                                indent:GREYObjectFormatIndent
                                                              hideEmpty:YES
                                                               keyOrder:keyOrder];
         NSString *reason = [NSString stringWithFormat:@"Matching element timed out.\n"
@@ -748,7 +741,7 @@
         NSArray *keyOrder = @[ kErrorDetailAssertCriteriaKey,
                                kErrorDetailElementMatcherKey ];
         NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                indent:kGREYObjectFormatIndent
+                                                                indent:GREYObjectFormatIndent
                                                              hideEmpty:YES
                                                               keyOrder:keyOrder];
         NSString *reason =
@@ -784,7 +777,7 @@
                                  kErrorDetailElementMatcherKey,
                                  kErrorDetailRecoverySuggestionKey ];
           NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                  indent:kGREYObjectFormatIndent
+                                                                  indent:GREYObjectFormatIndent
                                                                hideEmpty:YES
                                                                 keyOrder:keyOrder];
           NSString *reason = [NSString stringWithFormat:@"Cannot find UI Element.\n"
@@ -813,7 +806,7 @@
                                  kErrorDetailElementMatcherKey,
                                  kErrorDetailRecoverySuggestionKey ];
           NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                                  indent:kGREYObjectFormatIndent
+                                                                  indent:GREYObjectFormatIndent
                                                                hideEmpty:YES
                                                                 keyOrder:keyOrder];
           NSString *reason = [NSString stringWithFormat:@"Multiple UI elements matched "
@@ -843,7 +836,7 @@
     NSArray *keyOrder = @[ kErrorDetailAssertCriteriaKey,
                            kErrorDetailElementMatcherKey ];
     NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                            indent:kGREYObjectFormatIndent
+                                                            indent:GREYObjectFormatIndent
                                                          hideEmpty:YES
                                                           keyOrder:keyOrder];
     NSString *reason = [NSString stringWithFormat:@"An assertion failed.\n"

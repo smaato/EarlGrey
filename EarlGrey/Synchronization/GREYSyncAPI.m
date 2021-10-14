@@ -19,10 +19,7 @@
 #import "Assertion/GREYAssertionDefines.h"
 
 void grey_execute_sync(void (^block)()) {
-  if ([NSThread isMainThread]) {
-    NSLog(@"grey_execute_sync() cannot be invoked on the main thread. Aborting.");
-    abort();
-  }
+  GREYAssert(![NSThread isMainThread], @"Cannot call this method from the main thread.");
 
   dispatch_semaphore_t waitForBlock = dispatch_semaphore_create(0);
   CFRunLoopPerformBlock(CFRunLoopGetMain(), kCFRunLoopDefaultMode, ^{

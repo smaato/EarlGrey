@@ -44,9 +44,6 @@
     if ([matcher matches:item describingMismatchTo:failedSoFarDescription]) {
       return YES;
     }
-    if (i < _matchers.count - 1) {
-      [failedSoFarDescription appendText:@", "];
-    }
   }
   [mismatchDescription appendDescriptionOf:failedSoFarDescription];
   return NO;

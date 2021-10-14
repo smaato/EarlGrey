@@ -76,7 +76,7 @@
                            kErrorDetailRecoverySuggestionKey ];
 
     NSString *reasonDetail = [GREYObjectFormatter formatDictionary:errorDetails
-                                                            indent:kGREYObjectFormatIndent
+                                                            indent:GREYObjectFormatIndent
                                                          hideEmpty:YES
                                                           keyOrder:keyOrder];
     NSString *reason = [NSString stringWithFormat:@"Cannot set stepper value due to "
@@ -84,10 +84,7 @@
                                                   @"Exception with Action: %@\n",
                                                   reasonDetail];
 
-    GREYPopulateErrorOrLog(errorOrNil,
-                           kGREYInteractionErrorDomain,
-                           kGREYInteractionActionFailedErrorCode,
-                           reason);
+    GREYFailWithDetails(reason, @"");
 
     return NO;
   }

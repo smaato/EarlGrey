@@ -150,7 +150,6 @@ NSString *const kGREYXCTestCaseNotificationKey = @"GREYXCTestCaseNotificationKey
                     description:(NSString *)description {
   self.continueAfterFailure = NO;
   [self recordFailureWithDescription:description inFile:file atLine:line];
-    
   // If the test fails outside of the main thread in a nested runloop it will not be interrupted
   // until it's back in the outer most runloop. Raise an exception to interrupt the test immediately
   [[GREYFrameworkException exceptionWithName:kInternalTestInterruptException
@@ -158,8 +157,7 @@ NSString *const kGREYXCTestCaseNotificationKey = @"GREYXCTestCaseNotificationKey
 }
 
 - (void)recordFailureWithDescription:(NSString *)description inFile:(NSString *)file atLine:(NSUInteger)lineNo {
-    
-    
+
     XCTSourceCodeLocation *xctloc = [[XCTSourceCodeLocation alloc] initWithFilePath:file lineNumber:(NSInteger)lineNo] ;
     XCTSourceCodeContext *xctctx = [[XCTSourceCodeContext alloc] initWithLocation:xctloc] ;
     XCTIssue *issue = [[XCTIssue alloc] initWithType:XCTIssueTypeAssertionFailure
@@ -168,7 +166,7 @@ NSString *const kGREYXCTestCaseNotificationKey = @"GREYXCTestCaseNotificationKey
                                    sourceCodeContext:xctctx
                                      associatedError:nil
                                          attachments:[NSArray array]];
-    
+
     [self recordIssue:issue];
 }
 

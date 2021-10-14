@@ -15,6 +15,7 @@
 //
 
 #import "Additions/UITouch+GREYAdditions.h"
+
 #import <objc/runtime.h>
 #import "Additions/CGGeometry+GREYAdditions.h"
 #import "Common/GREYExposed.h"
@@ -35,20 +36,11 @@
     [self setView:[window hitTest:point withEvent:nil]];
     [self setTimestamp:[[NSProcessInfo processInfo] systemUptime]];
       
-      // PSPDFKit: This was changed in iOS 14.
-      if ([self respondsToSelector:@selector(_setIsFirstTouchForView:)]) {
-          [self setIsTap:YES];
-          [self _setIsFirstTouchForView:YES];
-      } else {
-          [self _setIsTapToClick:YES];
-
-          // We modify the touchFlags ivar struct directly.
-          // First entry is _firstTouchForView
-          Ivar flagsIvar = class_getInstanceVariable(object_getClass(self), "_touchFlags");
-          ptrdiff_t touchFlagsOffset = ivar_getOffset(flagsIvar);
-          char *flags = (__bridge void *)self + touchFlagsOffset;
-          *flags = *flags | (char)0x01;
-      }
+      [self _setIsTapToClick:YES];
+      Ivar flagsIvar = class_getInstanceVariable(object_getClass(self), "_touchFlags");
+      ptrdiff_t touchFlagsOffset = ivar_getOffset(flagsIvar);
+      char *flags = (__bridge void *)self + touchFlagsOffset;
+      *flags = *flags | (char)0x01;
       
   }
   return self;

@@ -21,13 +21,13 @@
 /**
  *  Indent when perform object formation.
  */
-GREY_EXTERN NSInteger const kGREYObjectFormatIndent;
+GREY_EXTERN NSInteger const GREYObjectFormatIndent;
 
 @interface GREYObjectFormatter : NSObject
 
 /**
  *  Serializes an array of objects into JSON string.
- *  The supported objects are: NSString, NSNumber, NSArray, NSDictionary and GREYError.
+ *  The supported objects are: NSString, NSNumber, NSArray, NSDictionary.
  *
  *  @param array  The array to serialize.
  *  @param indent The spaces that will be applied to each element of the serialized array.
@@ -40,7 +40,7 @@ GREY_EXTERN NSInteger const kGREYObjectFormatIndent;
 
 /**
  *  Serializes a dictionary of objects into JSON string.
- *  The supported objects are: NSString, NSNumber, NSArray, NSDictionary and GREYError.
+ *  The supported objects are: NSString, NSNumber, NSArray, NSDictionary.
  *
  *  @param dictionary The dictionary to serialize.
  *  @param indent     Number of spaces that will be applied to each element

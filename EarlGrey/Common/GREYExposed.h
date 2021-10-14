@@ -197,6 +197,7 @@ IOHIDEventRef IOHIDEventCreateDigitizerFingerEvent(CFAllocatorRef allocator,
   */
 - (void)_setIsTapToClick:(BOOL)isTap;
 
+
 /**
  *  Sets location property to @c location. If @c reset is @c NO, the original value of location will
  *  be stored in the UITouch's internal property @c previousLocation. If @c reset is @c YES, @c
@@ -384,14 +385,5 @@ IOHIDEventRef IOHIDEventCreateDigitizerFingerEvent(CFAllocatorRef allocator,
  *  @return ignored.
  */
 - (bool)loadAccessibility:(void **)unused;
-
-@end
-
-@interface UIAccessibilityTextFieldElement
-
-/**
- *  @return The UITextField that contains the accessibility text field element.
- */
--(UITextField *)textField;
 
 @end

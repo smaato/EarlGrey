@@ -61,10 +61,9 @@ NSString *const kGREYFailureHandlerKey = @"GREYFailureHandlerKey";
 }
 
 - (void)setFailureHandler:(id<GREYFailureHandler>)handler {
-  NSAssert([NSThread isMainThread], @"Calling from non-main thread is undefined.");
   @synchronized ([self class]) {
     if (handler) {
-      NSMutableDictionary *TLSDict = [[NSThread mainThread] threadDictionary];
+      NSMutableDictionary *TLSDict = [[NSThread currentThread] threadDictionary];
       [TLSDict setValue:handler forKey:kGREYFailureHandlerKey];
     } else {
       resetFailureHandler();
@@ -86,17 +85,15 @@ NSString *const kGREYFailureHandlerKey = @"GREYFailureHandlerKey";
 
 #pragma mark - Private
 
-// Resets the failure handler. Must be called from main thread otherwise behavior is undefined.
+// Resets the failure handler. Not thread safe.
 static inline void resetFailureHandler() {
-  assert([NSThread isMainThread]);
-  NSMutableDictionary *TLSDict = [[NSThread mainThread] threadDictionary];
+  NSMutableDictionary *TLSDict = [[NSThread currentThread] threadDictionary];
   [TLSDict setValue:[[GREYDefaultFailureHandler alloc] init] forKey:kGREYFailureHandlerKey];
 }
 
-// Gets the failure handler. Must be called from main thread otherwise behavior is undefined.
-inline id<GREYFailureHandler> getFailureHandler() {
-  assert([NSThread isMainThread]);
-  NSMutableDictionary *TLSDict = [[NSThread mainThread] threadDictionary];
+// Returns the current failure handler. Not thread safe.
+static inline id<GREYFailureHandler> getFailureHandler() {
+  NSMutableDictionary *TLSDict = [[NSThread currentThread] threadDictionary];
   return [TLSDict valueForKey:kGREYFailureHandlerKey];
 }
 

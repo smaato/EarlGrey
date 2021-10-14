@@ -17,7 +17,6 @@
 #import "Additions/NSError+GREYAdditions.h"
 
 #import "Common/GREYError.h"
-#import "Common/GREYErrorConstants.h"
 
 @implementation NSError (GREYAdditions)
 
@@ -28,7 +27,7 @@
   descriptionObject[kErrorCodeKey] = [NSString stringWithFormat:@"%ld", (long)self.code];
   descriptionObject[kErrorDescriptionKey] =  self.localizedDescription;
   descriptionObject[kErrorFailureReasonKey] = self.localizedFailureReason;
-  descriptionObject[kErrorDetailRecoverySuggestionKey] = self.localizedRecoverySuggestion;
+  descriptionObject[kErrorRecoverySuggestionKey] = self.localizedRecoverySuggestion;
 
   return descriptionObject;
 }

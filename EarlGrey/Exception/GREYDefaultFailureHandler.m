@@ -71,14 +71,13 @@
       [GREYFailureScreenshotter generateAppScreenshotsWithPrefix:screenshotPrefix
                                                          failure:exception.name];
 
-  NSArray *stackTrace = [NSThread callStackSymbols];
   NSString *log = [GREYFailureFormatter formatFailureForTestCase:currentTestCase
                                                     failureLabel:@"Exception"
                                                      failureName:exception.name
                                                         filePath:_fileName
                                                       lineNumber:_lineNumber
                                                     functionName:nil
-                                                      stackTrace:stackTrace
+                                                      stackTrace:[NSThread callStackSymbols]
                                                   appScreenshots:appScreenshots
                                                           format:@"%@\n", logMessage];
 

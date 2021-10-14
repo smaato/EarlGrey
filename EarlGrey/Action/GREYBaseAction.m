@@ -58,12 +58,12 @@
       errorDetails[kErrorDetailElementDescriptionKey] = [element grey_description];
       errorDetails[kErrorDetailConstraintRequirementKey] = mismatchDetail;
       errorDetails[kErrorDetailConstraintDetailsKey] = [_constraints description];
-      errorDetails[kErrorDetailRecoverySuggestionKey] =
-          @"Adjust element properties so that it matches the failed constraint(s).";
+      errorDetails[kErrorDetailRecoverySuggestionKey] = @"Adjust element properties "
+          @"so that it matches the failed constraints.";
 
       GREYError *error = GREYErrorMake(kGREYInteractionErrorDomain,
                                        kGREYInteractionConstraintsFailedErrorCode,
-                                       @"Cannot perform action due to constraint(s) failure.");
+                                       @"Cannot perform action due to a constraint failure.");
       error.errorInfo = errorDetails;
 
       if (errorOrNil) {
@@ -81,7 +81,7 @@
                                                               keyOrder:keyOrder];
 
         NSString *reason = [NSString stringWithFormat:@"Cannot perform action due to "
-                                                      @"constraint(s) failure.\n"
+                                                      @"a constraint failure.\n"
                                                       @"Exception with Action: %@\n",
                                                       reasonDetail];
 

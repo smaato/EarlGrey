@@ -19,7 +19,6 @@
 #import "Action/GREYAction.h"
 #import "Action/GREYActionBlock.h"
 #import "Action/GREYChangeStepperAction.h"
-#import "Action/GREYMultiFingerSwipeAction.h"
 #import "Action/GREYPickerAction.h"
 #import "Action/GREYPinchAction.h"
 #import "Action/GREYScrollAction.h"
@@ -45,17 +44,7 @@
 #import "Synchronization/GREYUIThreadExecutor.h"
 #import "Synchronization/GREYUIWebViewIdlingResource.h"
 
-static Class webAccessibilityObjectWrapperClass;
-static Class accessibilityTextFieldElementClass;
-
 @implementation GREYActions
-
-+ (void)initialize {
-  if (self == [GREYActions class]) {
-    webAccessibilityObjectWrapperClass = NSClassFromString(@"WebAccessibilityObjectWrapper");
-    accessibilityTextFieldElementClass = NSClassFromString(@"UIAccessibilityTextFieldElement");
-  }
-}
 
 + (id<GREYAction>)actionForSwipeFastInDirection:(GREYDirection)direction {
   return [[GREYSwipeAction alloc] initWithDirection:direction duration:kGREYSwipeFastDuration];
@@ -81,42 +70,6 @@ static Class accessibilityTextFieldElementClass;
                                            duration:kGREYSwipeSlowDuration
                                       startPercents:CGPointMake(xOriginStartPercentage,
                                                                 yOriginStartPercentage)];
-}
-
-+ (id<GREYAction>)actionForMultiFingerSwipeSlowInDirection:(GREYDirection)direction
-                                           numberOfFingers:(NSUInteger)numberOfFingers {
-  return [[GREYMultiFingerSwipeAction alloc] initWithDirection:direction
-                                                      duration:kGREYSwipeSlowDuration
-                                               numberOfFingers:numberOfFingers];
-}
-
-+ (id<GREYAction>)actionForMultiFingerSwipeFastInDirection:(GREYDirection)direction
-                                           numberOfFingers:(NSUInteger)numberOfFingers {
-  return [[GREYMultiFingerSwipeAction alloc] initWithDirection:direction
-                                                      duration:kGREYSwipeFastDuration
-                                               numberOfFingers:numberOfFingers];
-}
-
-+ (id<GREYAction>)actionForMultiFingerSwipeSlowInDirection:(GREYDirection)direction
-                                           numberOfFingers:(NSUInteger)numberOfFingers
-                                    xOriginStartPercentage:(CGFloat)xOriginStartPercentage
-                                    yOriginStartPercentage:(CGFloat)yOriginStartPercentage {
-  return [[GREYMultiFingerSwipeAction alloc] initWithDirection:direction
-                                                      duration:kGREYSwipeSlowDuration
-                                               numberOfFingers:numberOfFingers
-                                                 startPercents:CGPointMake(xOriginStartPercentage,
-                                                                           yOriginStartPercentage)];
-}
-
-+ (id<GREYAction>)actionForMultiFingerSwipeFastInDirection:(GREYDirection)direction
-                                           numberOfFingers:(NSUInteger)numberOfFingers
-                                    xOriginStartPercentage:(CGFloat)xOriginStartPercentage
-                                    yOriginStartPercentage:(CGFloat)yOriginStartPercentage {
-  return [[GREYMultiFingerSwipeAction alloc] initWithDirection:direction
-                                                      duration:kGREYSwipeFastDuration
-                                               numberOfFingers:numberOfFingers
-                                                 startPercents:CGPointMake(xOriginStartPercentage,
-                                                                           yOriginStartPercentage)];
 }
 
 + (id<GREYAction>)actionForPinchFastInDirection:(GREYPinchDirection)pinchDirection
@@ -226,8 +179,7 @@ static Class accessibilityTextFieldElementClass;
 + (id<GREYAction>)actionForClearText {
   id<GREYMatcher> constraints =
       grey_anyOf(grey_respondsToSelector(@selector(text)),
-                 grey_kindOfClass(accessibilityTextFieldElementClass),
-                 grey_kindOfClass(webAccessibilityObjectWrapperClass),
+                 grey_kindOfClass(NSClassFromString(@"WebAccessibilityObjectWrapper")),
                  grey_conformsToProtocol(@protocol(UITextInput)),
                  nil);
   return [GREYActionBlock actionWithName:@"Clear text"
@@ -237,10 +189,6 @@ static Class accessibilityTextFieldElementClass;
     if ([element grey_isWebAccessibilityElement]) {
       [GREYActions grey_webClearText:element];
       return YES;
-    } else if ([element isKindOfClass:accessibilityTextFieldElementClass]) {
-      UIAccessibilityTextFieldElement *textFieldElement =
-          (UIAccessibilityTextFieldElement *)element;
-      element = [textFieldElement textField];
     } else if ([element respondsToSelector:@selector(text)]) {
       textStr = [element text];
     } else {
@@ -384,8 +332,7 @@ static Class accessibilityTextFieldElementClass;
   SEL setTextSelector = NSSelectorFromString(@"setText:");
   id<GREYMatcher> constraints =
       grey_anyOf(grey_respondsToSelector(setTextSelector),
-                 grey_kindOfClass(accessibilityTextFieldElementClass),
-                 grey_kindOfClass(webAccessibilityObjectWrapperClass),
+                 grey_kindOfClass(NSClassFromString(@"WebAccessibilityObjectWrapper")),
                  nil);
   NSString *replaceActionName = [NSString stringWithFormat:@"Replace with text: \"%@\"", text];
   return [GREYActionBlock actionWithName:replaceActionName
@@ -393,10 +340,6 @@ static Class accessibilityTextFieldElementClass;
                             performBlock:^BOOL (id element, __strong NSError **errorOrNil) {
     if ([element grey_isWebAccessibilityElement]) {
       [GREYActions grey_webSetText:element text:text];
-    } else if ([element isKindOfClass:accessibilityTextFieldElementClass]) {
-      UIAccessibilityTextFieldElement *textFieldElement =
-          (UIAccessibilityTextFieldElement *)element;
-      element = [textFieldElement textField];
     } else {
       BOOL elementIsUIControl = [element isKindOfClass:[UIControl class]];
       BOOL elementIsUITextField = [element isKindOfClass:[UITextField class]];
@@ -494,7 +437,7 @@ static Class accessibilityTextFieldElementClass;
                                          error:errorOrNil];
 
   // Reset the keyboard delegate's autocorrection back to the original one.
-    [self grey_setAutocorrectionType:originalAutoCorrectionType ? YES : NO
+  [self grey_setAutocorrectionType:originalAutoCorrectionType ? YES : NO
                        forInstance:keyboardInstance
       withOriginalKeyboardDelegate:originalKeyboardDelegate
               withKeyboardToggling:NO];
@@ -591,7 +534,7 @@ static Class accessibilityTextFieldElementClass;
         [firstResponder setSelectedTextRange:newRange];
       } else {
         NSString *description = @"First responder [F] of element [E] does not conform to "
-                                @"UITextInput protocol.";
+            @"UITextInput protocol.";
         NSDictionary *glossary = @{ @"F" : [firstResponder description],
                                     @"E" : [expectedFirstResponderView description] };
         GREYPopulateErrorNotedOrLog(errorOrNil,
@@ -699,38 +642,6 @@ id<GREYAction> grey_swipeSlowInDirectionWithStartPoint(GREYDirection direction,
   return [GREYActions actionForSwipeSlowInDirection:direction
                              xOriginStartPercentage:xOriginStartPercentage
                              yOriginStartPercentage:yOriginStartPercentage];
-}
-
-id<GREYAction> grey_multiFingerSwipeSlowInDirection(GREYDirection direction,
-                                                    NSUInteger numberOfFingers) {
-  return [GREYActions actionForMultiFingerSwipeSlowInDirection:direction
-                                               numberOfFingers:numberOfFingers];
-}
-
-id<GREYAction> grey_multiFingerSwipeFastInDirection(GREYDirection direction,
-                                                    NSUInteger numberOfFingers) {
-  return [GREYActions actionForMultiFingerSwipeFastInDirection:direction
-                                               numberOfFingers:numberOfFingers];
-}
-
-id<GREYAction> grey_multiFingerSwipeSlowInDirectionWithStartPoint(GREYDirection direction,
-                                                                  NSUInteger numberOfFingers,
-                                                                  CGFloat xOriginStartPercentage,
-                                                                  CGFloat yOriginStartPercentage) {
-  return [GREYActions actionForMultiFingerSwipeSlowInDirection:direction
-                                               numberOfFingers:numberOfFingers
-                                        xOriginStartPercentage:xOriginStartPercentage
-                                        yOriginStartPercentage:yOriginStartPercentage];
-}
-
-id<GREYAction> grey_multiFingerSwipeFastInDirectionWithStartPoint(GREYDirection direction,
-                                                                  NSUInteger numberOfFingers,
-                                                                  CGFloat xOriginStartPercentage,
-                                                                  CGFloat yOriginStartPercentage) {
-  return [GREYActions actionForMultiFingerSwipeFastInDirection:direction
-                                               numberOfFingers:numberOfFingers
-                                        xOriginStartPercentage:xOriginStartPercentage
-                                        yOriginStartPercentage:yOriginStartPercentage];
 }
 
 id<GREYAction> grey_pinchFastInDirectionAndAngle(GREYPinchDirection pinchDirection,

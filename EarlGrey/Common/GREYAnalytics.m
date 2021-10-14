@@ -31,9 +31,14 @@
 static NSString *const kGREYAnalyticsTrackingID = @"UA-54227235-2";
 
 /**
+ *  The event category under which the analytics data is to be sent.
+ */
+static NSString *const kAnalyticsInvocationCategory = @"Test Invocation";
+
+/**
  *  The endpoint that receives EarlGrey usage data.
  */
-static NSString *const kTrackingEndPoint = @"https://ssl.google-analytics.com/collect";
+static NSString *const kTrackingEndPoint = @"https://ssl.google-analytics.com";
 
 @implementation GREYAnalytics {
   // Overriden GREYAnalytics delegate for custom handling of analytics.
@@ -88,28 +93,56 @@ static NSString *const kTrackingEndPoint = @"https://ssl.google-analytics.com/co
   return _delegate ? _delegate : self;
 }
 
-+ (void)sendEventHitWithTrackingID:(NSString *)trackingID
-                          clientID:(NSString *)clientID
-                          category:(NSString *)category
-                            action:(NSString *)action
-                             value:(NSString *)value {
-  // Initialize the payload with version(=1), tracking ID, client ID, category, action, and value.
-  NSMutableString *payload = [[NSMutableString alloc] initWithFormat:@"v=1"
-                                                                     @"&t=event"
-                                                                     @"&tid=%@"
-                                                                     @"&cid=%@"
-                                                                     @"&ec=%@"
-                                                                     @"&ea=%@"
-                                                                     @"&ev=%@",
-                                                                     trackingID,
-                                                                     clientID,
-                                                                     category,
-                                                                     action,
-                                                                     value];
+#pragma mark - GREYAnalyticsDelegate
 
-  NSURLComponents *components = [[NSURLComponents alloc] initWithString:kTrackingEndPoint];
-  [components setQuery:payload];
-  NSURL *url = [components URL];
+- (void)trackEventWithTrackingID:(NSString *)trackingID
+                          userID:(NSString *)userID
+                        category:(NSString *)category
+                     subCategory:(NSString *)subCategory
+                           value:(NSNumber *)valueOrNil {
+  [GREYAnalytics sendEventHitWithTrackingID:trackingID
+                                     userID:userID
+                                   category:category
+                                subCategory:subCategory
+                                      value:valueOrNil];
+}
+
+#pragma mark - Private
+
++ (void)sendEventHitWithTrackingID:(NSString *)trackingID
+                            userID:(NSString *)userID
+                          category:(NSString *)category
+                       subCategory:(NSString *)subCategory
+                             value:(NSNumber *)valueOrNil {
+  if ([category length] == 0 || [subCategory length] == 0) {
+    NSMutableArray *missingFields = [[NSMutableArray alloc] init];
+    if ([category length] == 0) {
+      [missingFields addObject:@"category"];
+    }
+    if ([subCategory length] == 0) {
+      [missingFields addObject:@"sub-category"];
+    }
+    GREYLogVerbose(@"Failed to send analytics because the following fields were not provided: %@.",
+                   missingFields);
+    return;
+  }
+
+  // Initialize the payload with version(=1), tracking ID, user ID, category and sub category.
+  NSMutableString *payload =
+      [[NSMutableString alloc] initWithFormat:@"collect?v=1&tid=%@&uid=%@&t=event&ec=%@&ea=%@",
+                                              trackingID, userID, category, subCategory];
+  // Append event value if present.
+  if (valueOrNil) {
+    [payload appendFormat:@"&ev=%@", valueOrNil];
+  }
+
+  // Return an url-encoded payload.
+  NSCharacterSet *allowedCharacterSet = [NSCharacterSet URLQueryAllowedCharacterSet];
+  NSString *encodedPayload =
+      [payload stringByAddingPercentEncodingWithAllowedCharacters:allowedCharacterSet];
+
+  NSURL *url = [NSURL URLWithString:encodedPayload
+                      relativeToURL:[NSURL URLWithString:kTrackingEndPoint]];
 
   [[[NSURLSession sharedSession] dataTaskWithURL:url
                                completionHandler:^(NSData *data,
@@ -119,26 +152,11 @@ static NSString *const kTrackingEndPoint = @"https://ssl.google-analytics.com/co
       // Failed to send analytics data, but since the test might be running in a sandboxed
       // environment it's not a good idea to freeze or throw assertions, let's just log and
       // move on.
-      GREYLogVerbose(@"Failed to send analytics data due to: %@", error);
+      GREYLogVerbose(@"Failed to send analytics data due to %@.", error);
     }
   }] resume];
 }
 
-#pragma mark - GREYAnalyticsDelegate
-
-- (void)trackEventWithTrackingID:(NSString *)trackingID
-                        clientID:(NSString *)clientID
-                        category:(NSString *)category
-                          action:(NSString *)action
-                           value:(NSString *)value {
-  [GREYAnalytics sendEventHitWithTrackingID:trackingID
-                                   clientID:clientID
-                                   category:category
-                                     action:action
-                                      value:value];
-}
-
-#pragma mark - Private
 
 /**
  *  Usage data is sent via Google Analytics indicating completion of a test case, if a delegate is
@@ -162,15 +180,13 @@ static NSString *const kTrackingEndPoint = @"https://ssl.google-analytics.com/co
           [[NSString stringWithFormat:@"%@::%@",
                                       [testCase grey_testClassName],
                                       [testCase grey_testMethodName]] grey_md5String];
-      NSString *action = [NSString stringWithFormat:@"TestCase_%@", testCaseMD5];
-      NSString *clientID = [[NSUUID UUID] UUIDString];
-      NSUInteger testCaseCount = [[XCTestSuite defaultTestSuite] testCaseCount];
-      NSString *value = [NSString stringWithFormat:@"%lu", (unsigned long)testCaseCount];
+      NSString *subCategory = [NSString stringWithFormat:@"TestCase_%@", testCaseMD5];
+      NSString *userID = [NSString stringWithFormat:@"%@_%@", bundleIDMD5, testCaseMD5];
       [self.delegate trackEventWithTrackingID:kGREYAnalyticsTrackingID
-                                     clientID:clientID
+                                       userID:userID
                                      category:bundleIDMD5
-                                       action:action
-                                        value:value];
+                                  subCategory:subCategory
+                                        value:@([[XCTestSuite defaultTestSuite] testCaseCount])];
     }
   }
 }
