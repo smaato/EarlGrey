@@ -23,11 +23,18 @@
 #import "Common/GREYSwizzler.h"
 #import "Synchronization/GREYAppStateTracker.h"
 
+static Class compatibilityVCClass;
+
 @implementation UIViewController (GREYAdditions)
 
 + (void)load {
   @autoreleasepool {
-    GREYSwizzler *swizzler = [[GREYSwizzler alloc] init];
+      if (@available(iOS 13.0, *)) {
+          compatibilityVCClass = NSClassFromString(@"UIEditingOverlayViewController");
+      } else {
+          compatibilityVCClass = NSClassFromString(@"UICompatibilityInputViewController");
+      }
+      GREYSwizzler *swizzler = [[GREYSwizzler alloc] init];
     // Swizzle viewWillAppear.
     BOOL swizzleSuccess = [swizzler swizzleClass:self
                            replaceInstanceMethod:@selector(viewWillAppear:)
@@ -108,32 +115,43 @@
 }
 
 - (void)greyswizzled_viewWillAppear:(BOOL)animated {
-  BOOL movingToNilWindow = [self grey_isMovingToNilWindow];
-  if (movingToNilWindow) {
-    GREYLogVerbose(@"View is moving to nil window. Skipping viewWillAppear state tracking.");
-  }
-
-  if (!movingToNilWindow) {
-    // Interactive transitions can cancel and cause imbalance of will and did calls.
-    id<UIViewControllerTransitionCoordinator> coordinator = [self transitionCoordinator];
-    if (coordinator && [coordinator initiallyInteractive]) {
-      [coordinator notifyWhenInteractionEndsUsingBlock:
-          ^(id<UIViewControllerTransitionCoordinatorContext> context) {
-            if ([context isCancelled]) {
-              NSString *elementID =
-                  objc_getAssociatedObject(self, @selector(greyswizzled_viewWillAppear:));
-              UNTRACK_STATE_FOR_ELEMENT_WITH_ID(kGREYPendingViewsToAppear, elementID);
+    
+    // For UICompatibilityInputViewController and UIEditingOverlayViewController, which are keyboard
+    // related classes, do not track this state due to issues seen with untracking.
+    if (![self isKindOfClass:compatibilityVCClass]) {
+        
+        BOOL movingToNilWindow = [self grey_isMovingToNilWindow];
+        if (movingToNilWindow) {
+            GREYLogVerbose(@"View is moving to nil window. Skipping viewWillAppear state tracking.");
+        }
+        
+        if (!movingToNilWindow) {
+            // Interactive transitions can cancel and cause imbalance of will and did calls.
+            id<UIViewControllerTransitionCoordinator> coordinator = [self transitionCoordinator];
+            if (coordinator && [coordinator initiallyInteractive]) {
+                void (^contextBlock)(id<UIViewControllerTransitionCoordinatorContext>) =
+                            ^(id<UIViewControllerTransitionCoordinatorContext> context) {
+                              if ([context isCancelled]) {
+                                id object = objc_getAssociatedObject(self, @selector(greyswizzled_viewWillAppear:));
+                                UNTRACK_STATE_FOR_ELEMENT_WITH_ID(kGREYPendingViewsToAppear, object);
+                              }
+                            };
+                #if !defined(__IPHONE_10_0) || (__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_10_0)
+                        [coordinator notifyWhenInteractionEndsUsingBlock:contextBlock];
+                #else
+                        [coordinator notifyWhenInteractionChangesUsingBlock:contextBlock];
+                #endif
+                                
             }
-          }];
+            
+            NSString *elementID = TRACK_STATE_FOR_ELEMENT(kGREYPendingViewsToAppear, self);
+            objc_setAssociatedObject(self,
+                                     @selector(greyswizzled_viewWillAppear:),
+                                     elementID,
+                                     OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
     }
-
-    NSString *elementID = TRACK_STATE_FOR_ELEMENT(kGREYPendingViewsToAppear, self);
-    objc_setAssociatedObject(self,
-                             @selector(greyswizzled_viewWillAppear:),
-                             elementID,
-                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-  }
-  INVOKE_ORIGINAL_IMP1(void, @selector(greyswizzled_viewWillAppear:), animated);
+    INVOKE_ORIGINAL_IMP1(void, @selector(greyswizzled_viewWillAppear:), animated);
 }
 
 - (void)greyswizzled_viewDidAppear:(BOOL)animated {

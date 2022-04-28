@@ -133,10 +133,12 @@ static GREYSignalHandler gPreviousSignalHandlers[kNumSignals];
   [self grey_setupCrashHandlers];
   [self grey_enableAccessibility];
   // Force software keyboard.
-  [[UIKeyboardImpl sharedInstance] setAutomaticMinimizationEnabled:NO];
+  //[[UIKeyboardImpl sharedInstance] setAutomaticMinimizationEnabled:NO];
   // Turn off auto correction as it interferes with typing on iOS8.2+.
   if (iOS8_2_OR_ABOVE()) {
-    [self grey_modifyKeyboardSettings];
+	  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    		[self grey_modifyKeyboardSettings];
+    });
   }
 }
 

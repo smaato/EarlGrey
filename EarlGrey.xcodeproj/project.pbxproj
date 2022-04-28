@@ -1183,6 +1183,7 @@
 		FD1000FB1C5B466F00B2DB0A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_DEADCODE_DEADSTORES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = "";
 				DEFINES_MODULE = YES;
@@ -1195,6 +1196,7 @@
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_WARN_UNUSED_VALUE = YES;
 				HEADER_SEARCH_PATHS = (
 					EarlGrey/,
 					fishhook/,
@@ -1211,6 +1213,7 @@
 				OTHER_CFLAGS = (
 					"-fobjc-arc",
 					"-fobjc-arc-exceptions",
+					"-Wno-unused-but-set-variable",
 				);
 				OTHER_CODE_SIGN_FLAGS = "";
 				OTHER_LDFLAGS = (
@@ -1232,6 +1235,7 @@
 		FD1000FC1C5B466F00B2DB0A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_DEADCODE_DEADSTORES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = "";
 				DEFINES_MODULE = YES;
@@ -1244,6 +1248,7 @@
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_WARN_UNUSED_VALUE = YES;
 				HEADER_SEARCH_PATHS = (
 					EarlGrey/,
 					fishhook/,
@@ -1260,6 +1265,7 @@
 				OTHER_CFLAGS = (
 					"-fobjc-arc",
 					"-fobjc-arc-exceptions",
+					"-Wno-unused-but-set-variable",
 				);
 				OTHER_CODE_SIGN_FLAGS = "";
 				OTHER_LDFLAGS = (
